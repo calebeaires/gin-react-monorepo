@@ -276,12 +276,81 @@ make clean          # Remove build artifacts
 - **Protected route**: Wrap with `<ProtectedRoute>` in `App.tsx`
 - **Org-required route**: Wrap with `<OrgGuard>` inside `<ProtectedRoute>`
 
+### Tutorial: Add a "Projects" Feature (End-to-End)
+
+Here's a complete walkthrough of adding a tenant-scoped feature — from database to UI.
+
+**Step 1 — Model** (`server/internal/model/project.go`):
+```go
+type Project struct {
+    bun.BaseModel `bun:"table:projects"`
+
+    ID        uuid.UUID `json:"id" bun:"id,pk,type:uuid,default:gen_random_uuid()"`
+    Name      string    `json:"name" bun:"name,notnull"`
+    CreatedAt time.Time `json:"created_at" bun:"created_at,nullzero,notnull,default:current_timestamp"`
+}
+```
+
+**Step 2 — Migration** (add to `server/internal/migrate/tenant.go`):
+```go
+// Inside CreateTenantSchema(), after creating the schema:
+_, err = db.NewCreateTable().
+    ModelTableExpr(fmt.Sprintf("%s.projects", pq.QuoteIdentifier(schemaName))).
+    Model((*model.Project)(nil)).
+    IfNotExists().
+    Exec(ctx)
+```
+
+**Step 3 — Handler** (`server/internal/handler/project.go`):
+```go
+func ListProjects() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        tx := c.MustGet("tenant_tx").(bun.Tx)
+        var projects []model.Project
+        if err := tx.NewSelect().Model(&projects).Scan(c.Request.Context()); err != nil {
+            ErrorResponse(c, http.StatusInternalServerError, "Failed to list projects")
+            return
+        }
+        SuccessResponse(c, http.StatusOK, projects)
+    }
+}
+```
+
+**Step 4 — Route** (add to tenant group in `server/internal/router/router.go`):
+```go
+tenant.GET("/projects", handler.ListProjects())
+```
+
+**Step 5 — Frontend** (`web/src/pages/ProjectsPage.tsx`):
+```tsx
+export default function ProjectsPage() {
+  const { data: projects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => tenantApi<Project[]>('/t/projects'),
+  })
+  return <div>{projects?.map(p => <div key={p.id}>{p.name}</div>)}</div>
+}
+```
+
+**Step 6 — Route** (add to `web/src/App.tsx` inside `<OrgGuard>`):
+```tsx
+<Route path="/projects" element={<ProjectsPage />} />
+```
+
+That's it — your feature is tenant-isolated, authenticated, and wired end-to-end.
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Deployment](docs/deployment.md) | Build, deploy (VPS, Docker, Fly.io), production checklist |
+| [Database](docs/database.md) | Schema layout, tenant isolation, adding tables |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues, debugging tips, manual API testing |
+| [Contributing](CONTRIBUTING.md) | Development workflow, code style, PR guidelines |
+
 ## Contributing
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes
-4. Push and open a PR
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow, code style, and PR guidelines.
 
 ## License
 
