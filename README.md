@@ -22,48 +22,67 @@ Built for developers who want a clean, production-ready starting point with mult
 
 ```
 .
-├── Makefile
-├── server/                          # Go/Gin backend (API + auth + embedded frontend)
-│   ├── cmd/server/main.go           # Entry point — wires DB, config, migrations, router
+├── Makefile                             # dev, build, install, clean commands
+├── CLAUDE.md                            # AI assistant project instructions
+├── server/                              # Go/Gin backend (API + auth + embedded frontend)
+│   ├── CLAUDE.md                        # Go-specific guidelines
+│   ├── cmd/server/
+│   │   ├── main.go                      # Entry point — wires DB, config, migrations, router
+│   │   └── static/                      # Embedded frontend (populated by make build)
 │   ├── internal/
-│   │   ├── config/config.go         # Postgres connection + Authula config
+│   │   ├── config/config.go             # Postgres connection + Authula config
 │   │   ├── handler/
-│   │   │   ├── health.go            # GET /api/health, /api/message
-│   │   │   ├── user.go              # GET /api/me (protected)
-│   │   │   ├── org.go               # Organization CRUD + member management
-│   │   │   ├── tenant.go            # Tenant-scoped endpoints
-│   │   │   └── static.go            # SPA routing for embedded frontend
+│   │   │   ├── health.go                # GET /api/health, /api/message
+│   │   │   ├── user.go                  # GET /api/me (protected)
+│   │   │   ├── org.go                   # Organization CRUD + member management
+│   │   │   ├── tenant.go                # Tenant-scoped endpoints
+│   │   │   ├── response.go              # JSON response envelope helpers
+│   │   │   └── static.go               # SPA routing for embedded frontend
 │   │   ├── middleware/
-│   │   │   ├── cors.go              # CORS middleware
-│   │   │   ├── auth.go              # Bearer token auth middleware
-│   │   │   └── tenant.go            # Tenant context + search_path isolation
+│   │   │   ├── cors.go                  # CORS middleware
+│   │   │   ├── auth.go                  # Bearer token auth middleware
+│   │   │   └── tenant.go               # Tenant context + search_path isolation
 │   │   ├── model/
-│   │   │   ├── organization.go      # Organization model
-│   │   │   └── organization_member.go # Membership + roles
-│   │   ├── migrate/                 # Public + tenant schema migrations
-│   │   └── router/router.go         # Mounts middleware, auth, API, org, tenant routes
-│   ├── go.mod
+│   │   │   ├── organization.go          # Organization model
+│   │   │   └── organization_member.go   # Membership + roles
+│   │   ├── migrate/
+│   │   │   ├── public.go               # Public schema migrations (users, orgs)
+│   │   │   └── tenant.go               # Per-tenant schema migrations
+│   │   └── router/router.go            # Mounts middleware, auth, API, org, tenant routes
+│   ├── go.mod / go.sum
 │   └── .env.example
-└── web/                             # React 19 + TypeScript frontend
+└── web/                                 # React 19 + TypeScript frontend
+    ├── CLAUDE.md                        # Frontend-specific guidelines
     ├── package.json
-    ├── vite.config.ts               # Vite + Tailwind + API proxy
+    ├── vite.config.ts                   # Vite + Tailwind + API proxy to :8081
+    ├── components.json                  # shadcn/ui configuration
     └── src/
-        ├── App.tsx                  # React Router + AuthLoader
+        ├── App.tsx                      # React Router + AuthLoader
+        ├── main.tsx                     # App entry point
+        ├── index.css                    # Tailwind CSS v4 styles
         ├── store/
-        │   ├── auth.ts              # Auth state: signIn, signUp, signOut, user
-        │   └── org.ts               # Org state: organizations, currentOrg, createOrg
+        │   ├── auth.ts                  # Auth state: signIn, signUp, signOut, user
+        │   └── org.ts                   # Org state: organizations, currentOrg, createOrg
         ├── components/
-        │   ├── ProtectedRoute.tsx
-        │   ├── OrgGuard.tsx
-        │   └── ui/                  # shadcn/ui components
+        │   ├── ProtectedRoute.tsx       # Redirects to /login if unauthenticated
+        │   ├── OrgGuard.tsx             # Redirects to /orgs if no org selected
+        │   ├── OrgSwitcher.tsx          # Org selection dropdown
+        │   ├── CreateOrgDialog.tsx      # Dialog for creating new organizations
+        │   └── ui/                      # shadcn/ui components (button, card, dialog, etc.)
         ├── pages/
-        │   ├── LoginPage.tsx
-        │   ├── SignupPage.tsx
-        │   ├── HomePage.tsx
-        │   └── OrgsPage.tsx
-        └── lib/
-            ├── api.ts               # Typed fetch wrapper + tenantApi with X-Org-Slug
-            └── utils.ts             # cn() utility
+        │   ├── LoginPage.tsx            # Email/password login
+        │   ├── SignupPage.tsx           # Account registration
+        │   ├── HomePage.tsx             # Main dashboard (org-scoped)
+        │   ├── OrgsPage.tsx             # Organization list + creation
+        │   └── OrgSettingsPage.tsx      # Organization settings (owner/admin)
+        ├── lib/
+        │   ├── api.ts                   # Typed fetch wrapper + tenantApi with X-Org-Slug
+        │   ├── types.ts                 # Shared TypeScript types
+        │   ├── query.ts                 # React Query configuration
+        │   ├── i18n.ts                  # Internationalization setup
+        │   └── utils.ts                 # cn() utility
+        └── locales/
+            └── en.json                  # English translations
 ```
 
 ## Prerequisites
